@@ -22,13 +22,11 @@ return new class extends Migration
             $table->id();
             $table->uuid('id_local')->unique();
             $table->boolean('synced')->default(true);
-
-            // Relación con Rol (Ahora sí encontrará la tabla 'roles')
             $table->foreignId('id_rol')->constrained('roles')->onDelete('restrict');
-
             $table->string('email', 100)->unique();
             $table->string('password'); 
             $table->string('nombre_completo', 100);
+            $table->string('foto')->nullable();
             $table->string('telefono', 20)->nullable();
             $table->boolean('estado_activo')->default(true);
             
