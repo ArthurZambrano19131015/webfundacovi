@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\Role;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use Livewire\WithFileUploads; 
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -18,11 +18,11 @@ class UserManager extends Component
 {
     use WithFileUploads;
 
-    public $foto; 
+    public $foto;
 
     public function render()
     {
-        return view('livewire.admin.user-manager',[
+        return view('livewire.admin.user-manager', [
             'usuarios' => User::with('role')->get(),
             'roles' => Role::all(),
         ]);
@@ -36,17 +36,20 @@ class UserManager extends Component
 
     public function storeUser($data)
     {
-        Validator::make($data,[
+        $validator = Validator::make($data,[
             'nombre_completo' => ['required', 'string', 'max:100'],
-            'email'           =>['required', 'email', 'max:100', 'unique:users,email'],
-            'telefono'        =>['nullable', 'string', 'max:20'],
+            'email'           => ['required', 'email', 'max:100', 'unique:users,email'],
+            'telefono'        => ['nullable', 'string', 'max:20'],
             'id_rol'          =>['required', 'exists:roles,id'],
             'password'        =>['required', Password::min(8)->mixedCase()->numbers()->symbols()],
-        ])->validate();
+        ]);
 
-        $this->validate(['foto' => 'nullable|image|max:2048']); // Máximo 2MB
+        if ($validator->fails()) {
+            return ['error' => $validator->errors()->first()];
+        }
 
-        // Guardar foto si existe
+        $this->validate(['foto' => 'nullable|image|max:2048']);
+
         $rutaFoto = $this->foto ? $this->foto->store('usuarios', 'public') : null;
 
         User::create([
@@ -59,19 +62,24 @@ class UserManager extends Component
             'estado_activo'   => true,
         ]);
 
-        $this->reset('foto'); 
+        $this->reset('foto');
+        return ['success' => true];
     }
 
     public function updateUser($data)
     {
-        Validator::make($data, [
+        $validator = Validator::make($data,[
             'id'              => ['required', 'exists:users,id'],
             'nombre_completo' => ['required', 'string', 'max:100'],
             'email'           =>['required', 'email', 'max:100', Rule::unique('users')->ignore($data['id'])],
-            'telefono'        =>['nullable', 'string', 'max:20'],
+            'telefono'        => ['nullable', 'string', 'max:20'],
             'id_rol'          => ['required', 'exists:roles,id'],
-            'password'        => ['nullable', Password::min(8)->mixedCase()->numbers()->symbols()],
-        ])->validate();
+            'password'        =>['nullable', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ]);
+
+        if ($validator->fails()) {
+            return ['error' => $validator->errors()->first()];
+        }
 
         $user = User::findOrFail($data['id']);
         
@@ -87,13 +95,15 @@ class UserManager extends Component
         if ($this->foto) {
             $this->validate(['foto' => 'image|max:2048']);
             if ($user->foto) {
-                Storage::disk('public')->delete($user->foto);
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto);
             }
             $user->foto = $this->foto->store('usuarios', 'public');
         }
 
         $user->save();
         $this->reset('foto');
+        
+        return ['success' => true];
     }
 
     public function toggleStatus($userId)

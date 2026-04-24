@@ -33,11 +33,26 @@
         }
     },
 
-    submit() {
-        if (this.isEdit) {
-            $wire.updateUser(this.form).then(() => { this.showModal = false; });
-        } else {
-            $wire.storeUser(this.form).then(() => { this.showModal = false; });
+    async submit() {
+        try {
+            let response;
+
+            if (this.isEdit) {
+                response = await $wire.updateUser(this.form);
+            } else {
+                response = await $wire.storeUser(this.form);
+            }
+
+            if (response && response.error) {
+                this.$dispatch('notify', { message: response.error, type: 'error' });
+                return; 
+            }
+
+            this.$dispatch('notify', { message: 'Usuario guardado exitosamente', type: 'success' });
+            this.showModal = false;
+
+        } catch (e) {
+            this.$dispatch('notify', { message: 'Fallo de conexión al guardar.', type: 'warning' });
         }
     }
 }">
