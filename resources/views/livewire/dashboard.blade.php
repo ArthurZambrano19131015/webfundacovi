@@ -27,13 +27,16 @@
         </div>
     </div>
 
-    <!-- 2. GRID INFERIOR CON PADDING PROPIO (Ocupa el resto del espacio en PC) -->
-    <div class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:overflow-hidden">
+    <!-- 2. GRID INFERIOR  -->
+    <div class="flex-1  md:p-2 grid grid-cols-1 lg:grid-cols-3 gap-2 lg:overflow-hidden">
 
         <!-- COLUMNA A: PERFIL DEL USUARIO -->
         <div
-            class="bg-[#E9EFA7] rounded-3xl shadow-lg border border-yellow-300 flex flex-col h-full overflow-hidden relative">
+            class="bg-[#E9EFA7] rounded-3xl shadow-lg border  border-yellow-300 flex flex-col h-full overflow-hidden relative">
 
+            <!-- Franja Superior -->
+            <div class="h-24 w-full bg-cover bg-center shrink-0 opacity-50"
+                style="background-image: url('{{ asset('img/apicultor-bg.jpg') }}');"></div>
             <!-- Avatar & Nombre -->
             <div class="px-5 flex items-end gap-3 -mt-10 mb-3 shrink-0 relative z-10">
                 <img src="{{ $user->foto ? asset('storage/' . $user->foto) : asset('img/default-avatar.png') }}"
@@ -49,10 +52,10 @@
             </div>
 
             <!-- Datos (Con Estados Vacíos / Zero-States) -->
-            <div class="px-4 pb-4 space-y-2 flex-1 flex flex-col justify-center">
+            <div class="px-4 pb-4 flex-1 grid grid-cols-2 gap-3 content-center">
 
                 <!-- Apiarios -->
-                <div class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50">
+                <div class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50 h-full flex flex-col">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-base">🐝</span>
                         <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Tus Apiarios</h3>
@@ -67,7 +70,7 @@
                 </div>
 
                 <!-- Ubicación -->
-                <div class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50">
+                <div class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50 h-full flex flex-col">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-base">📍</span>
                         <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Ubicación</h3>
@@ -81,8 +84,9 @@
                     @endif
                 </div>
 
-                <!-- Producción -->
-                <div class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50">
+                <!-- Producción (Opcional: Ocupa las 2 columnas si quieres que quede centrado al ser impar) -->
+                <div
+                    class="bg-white/60 rounded-xl p-3 shadow-sm border border-white/50 h-full flex flex-col col-span-2">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-base">🍯</span>
                         <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Tu Producción</h3>
@@ -139,13 +143,14 @@
         <div x-data="{
             init() {
                 const el = this.$refs.slider;
+                if (!el) return; // Evitar error si no hay productos
                 setInterval(() => {
                     if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 5) el.scrollTo({ left: 0, behavior: 'smooth' });
                     else el.scrollBy({ left: 120, behavior: 'smooth' });
                 }, 2500);
             }
         }"
-            class="bg-[#8A9A5B] rounded-3xl shadow-lg border border-yellow-200 flex flex-col h-64 lg:h-full relative">
+            class="bg-[#8A9A5B] rounded-3xl shadow-lg border border-yellow-200 flex flex-col h-64 lg:h-full relative overflow-hidden">
 
             <div class="absolute top-0 w-full flex justify-center z-10">
                 <div
@@ -155,31 +160,48 @@
             </div>
 
             <div class="flex-1 flex flex-col justify-center w-full">
-                <div x-ref="slider"
-                    class="flex overflow-x-auto gap-4 px-6 snap-x snap-mandatory scrollbar-hide w-full items-center">
-                    <!-- Productos estáticos .png -->
-                    <div
-                        class="shrink-0 snap-center w-24 h-24 rounded-full border-4 border-white/80 shadow-lg overflow-hidden bg-[#F3EAC0]">
-                        <img src="{{ asset('img/prod1.png') }}" class="w-full h-full object-cover">
+                @if ($productos->count() > 0)
+                    <div x-ref="slider"
+                        class="flex overflow-x-auto gap-4 px-6 snap-x snap-mandatory scrollbar-hide w-full items-center">
+                        @foreach ($productos as $prod)
+                            <div
+                                class="shrink-0 snap-center w-24 h-24 rounded-full border-4 border-white/80 shadow-lg overflow-hidden bg-[#F3EAC0] relative group cursor-pointer">
+
+                                @if ($prod->foto)
+                                    <img src="{{ $prod->foto }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center text-3xl">🍯</div>
+                                @endif
+                                <div
+                                    class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <span
+                                        class="text-white text-xs font-bold">${{ number_format($prod->precio, 0) }}</span>
+                                </div>
+
+                            </div>
+                        @endforeach
                     </div>
-                    <div
-                        class="shrink-0 snap-center w-24 h-24 rounded-full border-4 border-white/80 shadow-lg overflow-hidden bg-[#F3EAC0]">
-                        <img src="{{ asset('img/prod2.png') }}" class="w-full h-full object-cover">
+                @else
+                    <div class="flex flex-col items-center justify-center text-white/80 p-6 text-center">
+                        <span class="text-4xl mb-2">🛍️</span>
+                        <p class="text-xs font-bold uppercase tracking-wider">Aún no hay productos</p>
                     </div>
-                    <div
-                        class="shrink-0 snap-center w-24 h-24 rounded-full border-4 border-white/80 shadow-lg overflow-hidden bg-[#F3EAC0]">
-                        <img src="{{ asset('img/prod3.png') }}" class="w-full h-full object-cover">
-                    </div>
-                </div>
+                @endif
             </div>
 
-            <div class="p-4 w-full shrink-0">
-                <p
-                    class="text-white text-[10px] font-bold bg-black/30 text-center py-2 rounded-xl shadow-inner uppercase tracking-wider">
-                    Módulo habilitado en el Sprint 4
-                </p>
+            <div class="p-4 w-full shrink-0 z-10 relative">
+                <!-- Enlace dinámico según el rol -->
+                @if (auth()->user()->role->nombre_rol === 'Administrador')
+                    <a href="{{ route('inicio') }}#productos"
+                        class="block text-white text-[10px] font-bold bg-black/30 hover:bg-black/50 transition text-center py-2 rounded-xl shadow-inner uppercase tracking-wider">
+                        Ver Catálogo Público &rarr;
+                    </a>
+                @else
+                    <a href="{{ route('apicultor.productos') }}"
+                        class="block text-white text-[10px] font-bold bg-black/30 hover:bg-black/50 transition text-center py-2 rounded-xl shadow-inner uppercase tracking-wider">
+                        Ir a mis productos &rarr;
+                    </a>
+                @endif
             </div>
         </div>
-
     </div>
-</div>

@@ -13,9 +13,21 @@ class ApiarioManager extends Component
 {
     use WithPagination;
 
+    // FILTROS
     public $search = '';
+    public $filtro_estado = '';
+
+    public function resetFilters()
+    {
+        $this->reset(['search', 'filtro_estado']);
+        $this->resetPage();
+    }
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    public function updatingFiltroEstado()
     {
         $this->resetPage();
     }
@@ -29,23 +41,26 @@ class ApiarioManager extends Component
 
         if (!$isAdmin) {
             $query->where('id_apicultor', $user->id);
-        }
-
-        if ($isAdmin) {
+        } else {
             $query->with('apicultor');
         }
 
-        $apiarios = $query->where(function ($q) {
-            $q->where('nombre', 'like', '%' . $this->search . '%')
-                ->orWhere('municipio', 'like', '%' . $this->search . '%');
-        })
-            ->orderBy('estado_activo', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(6);
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('nombre', 'like', '%' . $this->search . '%')
+                    ->orWhere('municipio', 'like', '%' . $this->search . '%');
+            });
+        }
+        if ($this->filtro_estado !== '') {
+            $query->where('estado_activo', $this->filtro_estado);
+        }
+
+        $hasFilters = !empty($this->search) || $this->filtro_estado !== '';
 
         return view('livewire.admin.apiario-manager', [
-            'apiarios' => $apiarios,
+            'apiarios' => $query->orderBy('estado_activo', 'desc')->orderBy('created_at', 'desc')->paginate(6),
             'isAdmin'  => $isAdmin,
+            'hasFilters' => $hasFilters
         ]);
     }
 
@@ -61,13 +76,12 @@ class ApiarioManager extends Component
             'estado_activo' => true,
             'synced'        => true,
         ]);
-
         return true;
     }
+
     public function updateApiario($data)
     {
         $apiario = Apiario::where('id_local', $data['id_local'])->firstOrFail();
-
         $apiario->update([
             'nombre'        => $data['nombre'],
             'latitud'       => $data['latitud'] ?? null,
@@ -75,7 +89,6 @@ class ApiarioManager extends Component
             'municipio'     => $data['municipio'] ?? null,
             'synced'        => true,
         ]);
-
         return true;
     }
 

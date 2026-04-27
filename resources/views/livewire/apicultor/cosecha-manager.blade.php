@@ -78,20 +78,34 @@
 @online.window="isOnline = true" 
 @offline.window="isOnline = false">
 
-    <!-- Header y Filtros -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <!-- HEADER Y FILTRO -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-yellow-300 pb-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Registro de Cosechas</h2>
             <p class="text-sm font-bold text-yellow-600">Historial de Producción</p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
-            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-yellow-200">
-                <span class="text-xs font-bold text-gray-500 uppercase">Desde:</span>
-                <input wire:model.live="fecha_inicio" type="date" class="text-sm border-none bg-transparent focus:ring-0 p-0 text-gray-700">
-                <span class="text-xs font-bold text-gray-500 uppercase border-l pl-2">Hasta:</span>
-                <input wire:model.live="fecha_fin" type="date" class="text-sm border-none bg-transparent focus:ring-0 p-0 text-gray-700">
-            </div>
+            
+            <x-filter-menu :hasActiveFilters="$hasFilters">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Desde Fecha</label>
+                    <input wire:model.live="fecha_inicio" type="date" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Hasta Fecha</label>
+                    <input wire:model.live="fecha_fin" type="date" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Colmena</label>
+                    <select wire:model.live="filtro_colmena" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                        <option value="">Todas las colmenas</option>
+                        @foreach($colmenas as $col) 
+                            <option value="{{ $col->id }}">{{ $col->apiario->nombre }} - {{ $col->identificador }}</option> 
+                        @endforeach
+                    </select>
+                </div>
+            </x-filter-menu>
 
             <button @click="openCreate()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition whitespace-nowrap w-full md:w-auto">
                 + Registrar Cosecha

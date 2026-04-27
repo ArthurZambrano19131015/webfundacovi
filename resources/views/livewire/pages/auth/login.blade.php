@@ -76,7 +76,7 @@ new #[Layout('layouts.auth')] class extends Component {
                         Iniciar sesión
                     </button>
 
-                    <!-- 2. CAMBIO IMPORTANTE: Botón pequeño de Volver atrás -->
+                    <!-- 2. CAMBIO IMPORTANTE:-->
                     <a href="/"
                         class="w-full text-center border border-gray-600 hover:bg-gray-800 text-gray-300 font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out text-sm">
                         &larr; Volver al inicio

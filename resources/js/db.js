@@ -11,6 +11,8 @@ db.version(1).stores({
     cosechas: 'id_local, id_servidor, synced, id_colmena, fecha_recoleccion',
     lotes: 'id_local, id_servidor, synced, codigo_lote, estado_aprobacion',
     resultados: 'id_local, id_servidor, synced, id_lote, id_estandar',
+    productos: 'id_local, id_servidor, synced, id_apiario, nombre, estado_activo',
+    guias: 'id_local, id_servidor, synced, titulo, created_at',
 });
 
 export function generateUUID() {

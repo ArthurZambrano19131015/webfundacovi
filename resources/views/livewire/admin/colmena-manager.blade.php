@@ -86,29 +86,40 @@
     }
 }" @online.window="isOnline = true" @offline.window="isOnline = false">
 
-    <!-- Header y Buscador -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <!-- HEADER Y FILTRO -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-yellow-300 pb-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Gestión de Colmenas</h2>
-            @if ($isAdmin)
+            @if($isAdmin)
                 <p class="text-sm font-bold text-blue-600">Vista de Administrador (Todas las colmenas)</p>
             @endif
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div class="relative">
-                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Buscar por ID o Tipo..."
-                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-80 focus:ring-yellow-500 focus:border-yellow-500">
-                <div class="absolute left-3 top-2.5 text-gray-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+            
+            <x-filter-menu :hasActiveFilters="$hasFilters">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Buscar (ID o Tipo)</label>
+                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Ej: COL-001..." class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
                 </div>
-            </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Apiario</label>
+                    <select wire:model.live="filtro_apiario" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                        <option value="">Todos los apiarios</option>
+                        @foreach($apiarios as $api) <option value="{{ $api->id }}">{{ $api->nombre }}</option> @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Estado</label>
+                    <select wire:model.live="filtro_estado" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                        <option value="">Todos</option>
+                        <option value="1">Activas</option>
+                        <option value="0">Inactivas</option>
+                    </select>
+                </div>
+            </x-filter-menu>
 
-            <button @click="openCreate()"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition whitespace-nowrap">
+            <button @click="openCreate()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition whitespace-nowrap">
                 + Nueva Colmena
             </button>
         </div>

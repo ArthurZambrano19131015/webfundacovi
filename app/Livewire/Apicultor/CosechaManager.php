@@ -15,53 +15,63 @@ class CosechaManager extends Component
 {
     use WithPagination;
 
+    // FILTROS
     public $fecha_inicio = '';
     public $fecha_fin = '';
+    public $filtro_colmena = '';
 
-    public function updatingFechaInicio() { $this->resetPage(); }
-    public function updatingFechaFin() { $this->resetPage(); }
+    public function resetFilters()
+    {
+        $this->reset(['fecha_inicio', 'fecha_fin', 'filtro_colmena']);
+        $this->resetPage();
+    }
+
+    public function updatingFechaInicio()
+    {
+        $this->resetPage();
+    }
+    public function updatingFechaFin()
+    {
+        $this->resetPage();
+    }
+    public function updatingFiltroColmena()
+    {
+        $this->resetPage();
+    }
 
     public function render()
     {
         $userId = Auth::id();
 
-        $colmenas = Colmena::where('estado_activo', true)
-            ->whereHas('apiario', function($q) use ($userId) {
-                $q->where('id_apicultor', $userId);
-            })->get();
+        $colmenas = Colmena::with('apiario')->where('estado_activo', true)
+            ->whereHas('apiario', fn($q) => $q->where('id_apicultor', $userId))->get();
 
         $query = Cosecha::with(['colmena.apiario'])
-            ->whereHas('colmena.apiario', function($q) use ($userId) {
-                $q->where('id_apicultor', $userId);
-            });
-            
-        if ($this->fecha_inicio) {
-            $query->whereDate('fecha_recoleccion', '>=', $this->fecha_inicio);
-        }
-        if ($this->fecha_fin) {
-            $query->whereDate('fecha_recoleccion', '<=', $this->fecha_fin);
-        }
+            ->whereHas('colmena.apiario', fn($q) => $q->where('id_apicultor', $userId));
 
-        $cosechas = $query->orderBy('fecha_recoleccion', 'desc')->paginate(6);
+        if ($this->fecha_inicio) $query->whereDate('fecha_recoleccion', '>=', $this->fecha_inicio);
+        if ($this->fecha_fin) $query->whereDate('fecha_recoleccion', '<=', $this->fecha_fin);
+        if ($this->filtro_colmena) $query->where('id_colmena', $this->filtro_colmena);
 
-        return view('livewire.apicultor.cosecha-manager',[
+        $hasFilters = !empty($this->fecha_inicio) || !empty($this->fecha_fin) || !empty($this->filtro_colmena);
+
+        return view('livewire.apicultor.cosecha-manager', [
             'colmenas' => $colmenas,
-            'cosechas' => $cosechas,
+            'cosechas' => $query->orderBy('fecha_recoleccion', 'desc')->paginate(6),
+            'hasFilters' => $hasFilters
         ]);
     }
 
     public function storeCosecha($data)
     {
         $validator = Validator::make($data, [
-            'id_colmena'        =>['required', 'exists:colmenas,id'],
-            'fecha_recoleccion' =>['required', 'date', 'before_or_equal:today'],
-            'cantidad_kg'       =>['required', 'numeric', 'min:0.1'],
+            'id_colmena'        => ['required', 'exists:colmenas,id'],
+            'fecha_recoleccion' => ['required', 'date', 'before_or_equal:today'],
+            'cantidad_kg'       => ['required', 'numeric', 'min:0.1'],
             'novedades'         => ['nullable', 'string'],
         ]);
 
-        if ($validator->fails()) {
-            return ['error' => $validator->errors()->first()];
-        }
+        if ($validator->fails()) return ['error' => $validator->errors()->first()];
 
         Cosecha::create([
             'id_local'          => $data['id_local'],
