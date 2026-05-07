@@ -2,6 +2,7 @@
     showModal: false,
     isEdit: false,
     isOnline: navigator.onLine,
+    offlineItems: [],
     form: { id_local: '', nombre: '', latitud: '', longitud: '', municipio: '' },
 
     generateUUID() {
@@ -13,10 +14,39 @@
         });
     },
 
+    async loadOffline() {
+        if (window.db && window.db.apiarios) {
+            this.offlineItems = await window.db.apiarios.where('synced').equals(0).toArray();
+        }
+    },
+
+    init() {
+        setTimeout(() => { this.loadOffline(); }, 500);
+    },
+
     openCreate() {
         this.isEdit = false;
         this.resetForm();
         this.showModal = true;
+    },
+
+    async toggleStatusLocal(item) {
+        item.estado_activo = !item.estado_activo; 
+
+        if (this.isOnline && item.id) {
+            await $wire.deleteApiario(item.id);
+            this.$dispatch('notify', { message: 'Estado actualizado en servidor', type: 'success' });
+        } else {
+            try {
+                if (!window.db) throw new Error('DB local inactiva');
+                item.synced = 0; 
+                await window.db.apiarios.put(item);
+                this.loadOffline(); 
+                this.$dispatch('notify', { message: 'Estado actualizado (Offline)', type: 'info' });
+            } catch (e) {
+                this.$dispatch('notify', { message: 'Error: ' + e.message, type: 'error' });
+            }
+        }
     },
 
     openEdit(apiario) {
@@ -37,7 +67,6 @@
             return;
         }
 
-        // Si es edición usamos su ID, si es nuevo generamos uno
         const idLocal = this.isEdit ? this.form.id_local : this.generateUUID();
         const payload = { ...this.form, id_local: idLocal, estado_activo: true };
 
@@ -78,6 +107,7 @@
 
             this.showModal = false;
             this.resetForm();
+            this.loadOffline();
             this.$dispatch('notify', { message: 'Guardado en dispositivo (Modo Offline)', type: 'info' });
         } catch (e) {
             console.error(e);
@@ -126,6 +156,33 @@
         </div>
     </div>
 
+    <!-- BANDEJA DE DATOS OFFLINE (PENDIENTES DE SINCRONIZAR) -->
+    <template x-if="offlineItems.length > 0">
+        <div class="mb-6 bg-yellow-50 border border-yellow-300 rounded-xl p-4 shadow-sm">
+            <h3 class="font-bold text-yellow-800 flex items-center gap-2 mb-3">
+                <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Registros Pendientes de Sincronización
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <template x-for="item in offlineItems" :key="item.id_local">
+                    <div
+                        class="bg-white p-3 rounded-lg shadow border-l-4 border-yellow-400 flex justify-between items-center opacity-75">
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm" x-text="item.nombre"></p>
+                            <p class="text-xs text-gray-500" x-text="item.municipio"></p>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded">Esperando
+                            red...</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
     <!-- VISTA MÓVIL: Tarjetas -->
     <div class="grid grid-cols-1 gap-4 md:hidden">
         @forelse($apiarios as $apiario)
@@ -152,7 +209,7 @@
                         class="w-full py-2 text-sm font-bold rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition">
                         ✏️ Editar
                     </button>
-                    <button wire:click="deleteApiario({{ $apiario->id }})"
+                    <button @click="toggleStatusLocal({{ $apiario->toJson() }})"
                         class="w-full py-2 text-sm font-bold rounded-lg border transition {{ $apiario->estado_activo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50' }}">
                         {{ $apiario->estado_activo ? 'Desactivar' : 'Activar' }}
                     </button>
@@ -198,7 +255,7 @@
                                 class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition">
                                 Editar
                             </button>
-                            <button wire:click="deleteApiario({{ $apiario->id }})"
+                            <button @click="toggleStatusLocal({{ $apiario->toJson() }})"
                                 class="text-sm font-semibold transition {{ $apiario->estado_activo ? 'text-red-500 hover:text-red-700' : 'text-green-500 hover:text-green-700' }}">
                                 {{ $apiario->estado_activo ? 'Desactivar' : 'Activar' }}
                             </button>

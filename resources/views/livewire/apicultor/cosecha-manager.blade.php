@@ -2,6 +2,7 @@
     showModal: false,
     showConfirm: false, 
     isOnline: navigator.onLine,
+    offlineItems:[],
     form: { id_local: '', id_colmena: '', fecha_recoleccion: '', cantidad_kg: '', novedades: '' },
 
     generateUUID() {
@@ -10,6 +11,16 @@
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
+    },
+
+    async loadOffline() {
+        if (window.db && window.db.cosechas) {
+            this.offlineItems = await window.db.cosechas.where('synced').equals(0).toArray();
+        }
+    },
+
+    init() {
+        setTimeout(() => { this.loadOffline(); }, 500);
     },
 
     openCreate() {
@@ -58,6 +69,7 @@
             if (!window.db) throw new Error('DB no disponible');
             const offlineData = { ...payload, synced: 0, created_at: new Date().toISOString() };
             await window.db.cosechas.put(offlineData);
+            this.loadOffline();
             this.closeAll();
             this.$dispatch('notify', { message: 'Cosecha guardada en dispositivo (Offline)', type: 'info' });
         } catch (e) {
@@ -112,6 +124,27 @@
             </button>
         </div>
     </div>
+
+    <!-- BANDEJA DE DATOS OFFLINE -->
+    <template x-if="offlineItems.length > 0">
+        <div class="mb-6 bg-yellow-50 border border-yellow-300 rounded-xl p-4 shadow-sm">
+            <h3 class="font-bold text-yellow-800 flex items-center gap-2 mb-3">
+                <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Cosechas pendientes de Sincronización
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <template x-for="item in offlineItems" :key="item.id_local">
+                    <div class="bg-white p-3 rounded-lg shadow border-l-4 border-yellow-400 flex justify-between items-center opacity-80">
+                        <div>
+                            <p class="font-black text-yellow-600 text-lg" x-text="item.cantidad_kg + ' kg'"></p>
+                            <p class="text-xs text-gray-500" x-text="item.fecha_recoleccion"></p>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded">Esperando red...</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
 
     <!-- VISTA MÓVIL: Tarjetas -->
     <div class="grid grid-cols-1 gap-4 md:hidden">

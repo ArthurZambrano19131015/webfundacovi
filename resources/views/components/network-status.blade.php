@@ -1,78 +1,4 @@
-<div x-data="{
-    status: navigator.onLine ? 'synced' : 'offline',
-    progress: 0,
-    totalItems: 0,
-
-    init() {
-        if (navigator.onLine) {
-            this.startSyncing();
-        }
-    },
-
-    goOnline() {
-        this.startSyncing();
-    },
-
-    goOffline() {
-        this.status = 'offline';
-        this.progress = 0;
-    },
-
-    async startSyncing() {
-        if (!window.db) return;
-
-        this.status = 'syncing';
-        this.progress = 0;
-
-        const tablas = ['apiarios', 'colmenas', 'cosechas', 'lotes', 'productos'];
-        let itemsPendientes = [];
-
-        try {
-            // 1. Buscar registros pendientes
-            for (let tabla of tablas) {
-                if (window.db[tabla]) {
-                    let pendientes = await window.db[tabla].where('synced').equals(0).toArray();
-                    pendientes.forEach(item => itemsPendientes.push({ tabla: tabla, data: item }));
-                }
-            }
-
-            this.totalItems = itemsPendientes.length;
-
-            // Si no hay nada que sincronizar, pasar a verde directamente
-            if (this.totalItems === 0) {
-                this.progress = 100;
-                setTimeout(() => { this.status = 'synced'; }, 500);
-                return;
-            }
-
-            // 2. Procesar cada registro pendiente
-            let procesados = 0;
-            for (let item of itemsPendientes) {
-
-                // LLAMADA FETCH AL SERVIDOR:
-
-                // Simulamos el tiempo de espera del servidor para que la barra se mueva fluidamente
-                await new Promise(resolve => setTimeout(resolve, 400));
-
-                // Una vez el servidor responde OK, marcamos como sincronizado localmente
-                await window.db[item.tabla].update(item.data.id_local, { synced: 1 });
-
-                // Actualizar el progreso matemático REAL
-                procesados++;
-                this.progress = Math.round((procesados / this.totalItems) * 100);
-            }
-
-            // 3. Terminar
-            if (this.progress >= 100) {
-                setTimeout(() => { this.status = 'synced'; }, 800);
-            }
-
-        } catch (error) {
-            console.error('Error en sincronización:', error);
-            this.status = 'offline'; // Si falla, volvemos a modo offline para proteger los datos
-        }
-    }
-}" @online.window="goOnline()" @offline.window="goOffline()"
+<div x-data="networkStatusLogic()" @online.window="goOnline()" @offline.window="goOffline()"
     class="fixed bottom-4 right-4 z-[9999] pointer-events-none transition-all duration-300">
 
     <!-- ESTADO 1: MODO OFFLINE -->
@@ -88,7 +14,7 @@
         </div>
     </template>
 
-    <!-- ESTADO 2: SINCRONIZANDO  -->
+    <!-- ESTADO 2: SINCRONIZANDO (Barra Real) -->
     <template x-if="status === 'syncing'">
         <div
             class="bg-gray-900 text-white w-56 rounded-lg shadow-2xl border border-gray-700 overflow-hidden flex flex-col">
@@ -112,5 +38,116 @@
             <span class="text-[10px] font-bold uppercase tracking-wider">Sincronizado</span>
         </div>
     </template>
-
 </div>
+
+<!-- Lógica extraída a un script seguro -->
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('networkStatusLogic', () => ({
+            status: navigator.onLine ? 'synced' : 'offline',
+            progress: 0,
+            totalItems: 0,
+
+            init() {
+                if (navigator.onLine) {
+                    this.startSyncing();
+                }
+            },
+
+            goOnline() {
+                this.startSyncing();
+            },
+
+            goOffline() {
+                this.status = 'offline';
+                this.progress = 0;
+            },
+
+            async startSyncing() {
+                if (!window.db) return;
+
+                this.status = 'syncing';
+                this.progress = 0;
+
+                const tablas = ['apiarios', 'colmenas', 'cosechas', 'lotes', 'productos'];
+                let itemsPendientes = [];
+
+                try {
+                    // 1. Buscar registros pendientes
+                    for (let tabla of tablas) {
+                        if (window.db[tabla]) {
+                            let pendientes = await window.db[tabla].where('synced').equals(0)
+                                .toArray();
+                            pendientes.forEach(item => itemsPendientes.push({
+                                tabla: tabla,
+                                data: item
+                            }));
+                        }
+                    }
+
+                    this.totalItems = itemsPendientes.length;
+
+                    // Si no hay nada que sincronizar, pasar a verde directamente
+                    if (this.totalItems === 0) {
+                        this.progress = 100;
+                        setTimeout(() => {
+                            this.status = 'synced';
+                        }, 500);
+                        return;
+                    }
+
+                    // 2. Procesar cada registro pendiente
+                    let procesados = 0;
+                    let exitosos = 0;
+
+                    // Extraemos el Token de forma segura sin romper HTML
+                    const metaTag = document.querySelector("meta[name='csrf-token']");
+                    const csrfToken = metaTag ? metaTag.getAttribute('content') : '';
+
+                    for (let item of itemsPendientes) {
+                        try {
+                            let response = await fetch('/api/sync', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                body: JSON.stringify(item)
+                            });
+
+                            if (response.ok) {
+                                await window.db[item.tabla].update(item.data.id_local, {
+                                    synced: 1
+                                });
+                                exitosos++;
+                            }
+                        } catch (fetchError) {
+                            console.error('Fallo al sincronizar un registro:', fetchError);
+                        }
+
+                        procesados++;
+                        this.progress = Math.round((procesados / this.totalItems) * 100);
+                    }
+
+                    // 3. Terminar
+                    if (this.progress >= 100) {
+                        setTimeout(() => {
+                            this.status = 'synced';
+                        }, 500);
+
+                        if (exitosos > 0) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Error en sincronización general:', error);
+                    this.status = 'offline';
+                }
+            }
+        }));
+    });
+</script>

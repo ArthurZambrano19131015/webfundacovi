@@ -2,6 +2,7 @@
     showModal: false,
     isEdit: false,
     isOnline: navigator.onLine,
+    offlineItems: [],
     form: { id_local: '', id_apiario: '', identificador: '', tipo_colmena: '', fecha_instalacion: '' },
 
     generateUUID() {
@@ -13,10 +14,39 @@
         });
     },
 
+    async loadOffline() {
+        if (window.db && window.db.colmenas) {
+            this.offlineItems = await window.db.colmenas.where('synced').equals(0).toArray();
+        }
+    },
+
+    init() {
+        setTimeout(() => { this.loadOffline(); }, 500);
+    },
+
     openCreate() {
         this.isEdit = false;
         this.resetForm();
         this.showModal = true;
+    },
+
+    async toggleStatusLocal(item) {
+        item.estado_activo = !item.estado_activo;
+
+        if (this.isOnline && item.id) {
+            await $wire.toggleColmenaStatus(item.id);
+            this.$dispatch('notify', { message: 'Estado actualizado en servidor', type: 'success' });
+        } else {
+            try {
+                if (!window.db) throw new Error('DB local inactiva');
+                item.synced = 0;
+                await window.db.colmenas.put(item);
+                this.loadOffline();
+                this.$dispatch('notify', { message: 'Estado actualizado (Offline)', type: 'info' });
+            } catch (e) {
+                this.$dispatch('notify', { message: 'Error: ' + e.message, type: 'error' });
+            }
+        }
     },
 
     openEdit(colmena) {
@@ -74,6 +104,7 @@
             const offlineData = { ...payload, synced: 0, created_at: new Date().toISOString() };
             // put actualizará si el id_local ya existe, o lo creará si es nuevo
             await window.db.colmenas.put(offlineData);
+            this.loadOffline();
             this.showModal = false;
             this.$dispatch('notify', { message: 'Guardado en dispositivo (Modo Offline)', type: 'info' });
         } catch (e) {
@@ -87,31 +118,37 @@
 }" @online.window="isOnline = true" @offline.window="isOnline = false">
 
     <!-- HEADER Y FILTRO -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-yellow-300 pb-4">
+    <div
+        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-yellow-300 pb-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Gestión de Colmenas</h2>
-            @if($isAdmin)
+            @if ($isAdmin)
                 <p class="text-sm font-bold text-blue-600">Vista de Administrador (Todas las colmenas)</p>
             @endif
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            
+
             <x-filter-menu :hasActiveFilters="$hasFilters">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Buscar (ID o Tipo)</label>
-                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Ej: COL-001..." class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Ej: COL-001..."
+                        class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Apiario</label>
-                    <select wire:model.live="filtro_apiario" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                    <select wire:model.live="filtro_apiario"
+                        class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
                         <option value="">Todos los apiarios</option>
-                        @foreach($apiarios as $api) <option value="{{ $api->id }}">{{ $api->nombre }}</option> @endforeach
+                        @foreach ($apiarios as $api)
+                            <option value="{{ $api->id }}">{{ $api->nombre }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Estado</label>
-                    <select wire:model.live="filtro_estado" class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
+                    <select wire:model.live="filtro_estado"
+                        class="w-full text-sm border-gray-300 rounded-md focus:ring-yellow-500">
                         <option value="">Todos</option>
                         <option value="1">Activas</option>
                         <option value="0">Inactivas</option>
@@ -119,11 +156,38 @@
                 </div>
             </x-filter-menu>
 
-            <button @click="openCreate()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition whitespace-nowrap">
+            <button @click="openCreate()"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition whitespace-nowrap">
                 + Nueva Colmena
             </button>
         </div>
     </div>
+
+    <!-- BANDEJA DE DATOS OFFLINE -->
+    <template x-if="offlineItems.length > 0">
+        <div class="mb-6 bg-yellow-50 border border-yellow-300 rounded-xl p-4 shadow-sm">
+            <h3 class="font-bold text-yellow-800 flex items-center gap-2 mb-3">
+                <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Colmenas pendientes de Sincronización
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <template x-for="item in offlineItems" :key="item.id_local">
+                    <div
+                        class="bg-white p-3 rounded-lg shadow border-l-4 border-yellow-400 flex justify-between items-center opacity-80">
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm" x-text="item.identificador"></p>
+                            <p class="text-xs text-gray-500" x-text="item.tipo_colmena || 'Estándar'"></p>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded">Esperando
+                            red...</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
 
     <!-- VISTA MÓVIL: Tarjetas -->
     <div class="grid grid-cols-1 gap-4 md:hidden">
@@ -154,7 +218,7 @@
                         class="w-full py-2 text-sm font-bold rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50">
                         ✏️ Editar
                     </button>
-                    <button wire:click="toggleColmenaStatus({{ $colmena->id }})"
+                    <button @click="toggleStatusLocal({{ $colmena->toJson() }})"
                         class="w-full py-2 text-sm font-bold rounded-lg border {{ $colmena->estado_activo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50' }}">
                         {{ $colmena->estado_activo ? 'Desactivar' : 'Activar' }}
                     </button>
@@ -202,7 +266,7 @@
                         <td class="px-6 py-4 text-center">
                             <button @click="openEdit({{ $colmena->toJson() }})"
                                 class="mr-3 text-sm font-semibold text-blue-600 hover:text-blue-800">Editar</button>
-                            <button wire:click="toggleColmenaStatus({{ $colmena->id }})"
+                            <button @click="toggleStatusLocal({{ $colmena->toJson() }})"
                                 class="text-sm font-semibold {{ $colmena->estado_activo ? 'text-red-500 hover:text-red-700' : 'text-green-500 hover:text-green-700' }}">
                                 {{ $colmena->estado_activo ? 'Desactivar' : 'Activar' }}
                             </button>

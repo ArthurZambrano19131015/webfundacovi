@@ -27,6 +27,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/apicultor/cosechas', CosechaManager::class)->name('apicultor.cosechas');
     Route::get('/apicultor/calidad', LoteCalidadManager::class)->name('apicultor.calidad');
     Route::get('/apicultor/productos', ProductoManager::class)->name('apicultor.productos');
+
+    Route::post('/api/sync',[\App\Http\Controllers\SyncController::class, 'sync'])->name('api.sync');
 });
 
 require __DIR__.'/auth.php';

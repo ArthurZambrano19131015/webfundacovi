@@ -1,6 +1,7 @@
 <div x-data="{
     showModal: false,
     isEdit: false,
+    isOnline: navigator.onLine, // 1. Agregamos el estado de red
     photoPreview: null,
     form: { id: null, nombre_completo: '', email: '', telefono: '', id_rol: '', password: '' },
 
@@ -13,7 +14,6 @@
 
     openEdit(user) {
         this.isEdit = true;
-        // Si tiene foto, armamos la URL, si no, mostramos un preview nulo
         this.photoPreview = user.foto ? '/storage/' + user.foto : null;
         this.form = {
             id: user.id,
@@ -34,9 +34,14 @@
     },
 
     async submit() {
+        // 2. REGLA ESTRICTA: Bloqueo de seguridad si no hay red
+        if (!this.isOnline) {
+            this.$dispatch('notify', { message: 'Operación denegada. Este módulo requiere conexión al servidor.', type: 'error' });
+            return;
+        }
+
         try {
             let response;
-
             if (this.isEdit) {
                 response = await $wire.updateUser(this.form);
             } else {
@@ -45,7 +50,7 @@
 
             if (response && response.error) {
                 this.$dispatch('notify', { message: response.error, type: 'error' });
-                return; 
+                return;
             }
 
             this.$dispatch('notify', { message: 'Usuario guardado exitosamente', type: 'success' });
@@ -55,7 +60,7 @@
             this.$dispatch('notify', { message: 'Fallo de conexión al guardar.', type: 'warning' });
         }
     }
-}">
+}" @online.window="isOnline = true" @offline.window="isOnline = false">
 
     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h2 class="text-2xl font-bold text-gray-800">Gestión de Usuarios</h2>
@@ -130,8 +135,21 @@
 
             <form @submit.prevent="submit()" class="p-6 space-y-4 overflow-y-auto">
 
+                <!-- AVISO DE SEGURIDAD OFFLINE -->
+                <template x-if="!isOnline">
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-4 flex items-start gap-3">
+                        <span class="text-xl">📡</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-red-800">Conexión Requerida</h4>
+                            <p class="text-xs text-red-600 mt-1">Por políticas de seguridad y encriptación, no se
+                                permite crear o editar credenciales de usuarios en modo Offline.</p>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- PREVIEW Y SUBIDA DE FOTO -->
-                <div class="flex flex-col items-center gap-2">
+                <div class="flex flex-col items-center gap-2"
+                    :class="!isOnline ? 'opacity-50 pointer-events-none' : ''">
                     <div
                         class="w-20 h-20 rounded-full bg-gray-200 border border-gray-300 overflow-hidden flex items-center justify-center">
                         <template x-if="photoPreview">
@@ -146,6 +164,7 @@
                     @error('foto')
                         <span class="text-red-500 text-xs">{{ $message }}</span>
                     @enderror
+                    <p class="text-sm text-yellow-500">La foto debe ser en formato JPG, PNG. max 2MB</p>
                 </div>
 
                 <div>
@@ -186,11 +205,13 @@
                     @error('password')
                         <span class="text-red-500 text-xs">{{ $message }}</span>
                     @enderror
+                    <p class="text-sm text-yellow-500">La contraseña debe tener al menos 8 caracteres y contener al
+                        menos una letra mayúscula, una letra minúscula y un número.</p>
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit"
-                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl shadow-lg transition">
+                    <button type="submit" :disabled="!isOnline"
+                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
                         Guardar Usuario
                     </button>
                 </div>
