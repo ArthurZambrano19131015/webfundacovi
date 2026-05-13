@@ -90,8 +90,7 @@
                 this.resetForm();
             } catch (e) {
                 console.error(e);
-                this.$dispatch('notify', { message: 'Fallo de red, guardando localmente...', type: 'warning' });
-                this.saveLocal(payload);
+                this.$dispatch('notify', { message: 'Error interno del servidor. Revisa los datos o contacta al soporte.', type: 'error' });
             }
         } else {
             this.saveLocal(payload);

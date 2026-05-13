@@ -85,8 +85,8 @@
                             </div>
                             <div class="p-6 flex flex-col flex-1 text-center">
                                 <h3 class="font-black text-xl text-gray-800 leading-tight mb-2">{{ $prod->nombre }}</h3>
-                                <p class="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-3">📍 Apiario:
-                                    {{ $prod->apiario->nombre }}</p>
+                                <p class="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-3">📍 Municipio:
+                                    {{ $prod->apiario->municipio }}</p>
                                 <p class="text-sm text-gray-600 flex-1 line-clamp-3">
                                     {{ $prod->observaciones ?? 'Producto 100% natural, extraído artesanalmente.' }}
                                 </p>
@@ -140,6 +140,8 @@
                             <div>
                                 <h3 class="font-bold text-lg text-gray-900 leading-tight">{{ $api->nombre_completo }}
                                 </h3>
+                                <h4 class="font-bold text-sm text-yellow-700 leading-tight">{{ "Tel: " . $api->telefono }}
+                                </h4>
                                 <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Miembro
                                     FUNDACOVI</p>
                             </div>

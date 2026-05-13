@@ -18,10 +18,27 @@ class Dashboard extends Component
         $isAdmin = $user->role->nombre_rol === 'Administrador';
 
         // 1. Ubicaciones
-        $apiarios = Apiario::where('id_apicultor', $user->id)->get();
+        $apiariosQuery = Apiario::query();
+        if (!$isAdmin) {
+            $apiariosQuery->where('id_apicultor', $user->id);
+        }
+        $apiarios = $apiariosQuery->get();
+
         $municipios = $apiarios->pluck('municipio')->filter()->unique()->implode(', ');
         if (empty($municipios)) $municipios = 'Aún no has registrado ubicaciones';
-        
+    
+        $apiariosMap = $apiarios->filter(function ($apiario) {
+            return !empty($apiario->latitud) && !empty($apiario->longitud);
+        })->map(function ($apiario) use ($isAdmin) {
+            return[
+                'lat' => $apiario->latitud,
+                'lng' => $apiario->longitud,
+                'nombre' => $apiario->nombre,
+                'productor' => $isAdmin ? $apiario->apicultor->nombre_completo : 'Mi Apiario',
+            ];
+        })->values()->toArray();
+        // ---------------------------------
+
         // 2. Producción
         $miProduccion = Cosecha::whereHas('colmena.apiario', function($q) use ($user) {
             $q->where('id_apicultor', $user->id);
@@ -46,6 +63,7 @@ class Dashboard extends Component
             'miProduccion' => $miProduccion,
             'porcentajeAporte' => $porcentajeAporte,
             'productos' => $productos, 
+            'apiariosMap' => $apiariosMap,
         ]);
     }
 }

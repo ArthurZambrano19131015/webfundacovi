@@ -8,6 +8,8 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 #[Layout('layouts.app')]
 class ColmenaManager extends Component
@@ -77,6 +79,23 @@ class ColmenaManager extends Component
 
     public function storeColmena($data)
     {
+        $validator = Validator::make($data, [
+            'id_local'          => 'required|uuid',
+            'id_apiario'        => 'required|exists:apiarios,id',
+            'fecha_instalacion' => 'required|date',
+            'tipo_colmena'      => 'nullable|string|max:50',
+            'identificador'     => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('colmenas')->where('id_apiario', $data['id_apiario'])
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return ['error' => $validator->errors()->first()];
+        }
+
         Colmena::create([
             'id_local'         => $data['id_local'],
             'id_apiario'       => $data['id_apiario'],
@@ -86,12 +105,32 @@ class ColmenaManager extends Component
             'estado_activo'    => true,
             'synced'           => true,
         ]);
-        return true;
+
+        return ['success' => true];
     }
 
     public function updateColmena($data)
     {
         $colmena = Colmena::where('id_local', $data['id_local'])->firstOrFail();
+
+        $validator = Validator::make($data, [
+            'id_apiario'        => 'required|exists:apiarios,id',
+            'fecha_instalacion' => 'required|date',
+            'tipo_colmena'      => 'nullable|string|max:50',
+            'identificador'     => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('colmenas')
+                    ->where('id_apiario', $data['id_apiario'])
+                    ->ignore($colmena->id)
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return ['error' => $validator->errors()->first()];
+        }
+
         $colmena->update([
             'id_apiario'       => $data['id_apiario'],
             'identificador'    => $data['identificador'],
@@ -99,7 +138,8 @@ class ColmenaManager extends Component
             'fecha_instalacion' => $data['fecha_instalacion'],
             'synced'           => true,
         ]);
-        return true;
+
+        return ['success' => true];
     }
 
     public function toggleColmenaStatus($id)
