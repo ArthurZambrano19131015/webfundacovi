@@ -41,10 +41,6 @@ new class extends Component
             'telefono' => $validated['telefono'],
         ]);
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
         // Logica para reemplazar la foto
         if ($this->foto_nueva) {
             if ($user->foto) {
