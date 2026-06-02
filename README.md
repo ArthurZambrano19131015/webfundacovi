@@ -1,58 +1,61 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🐝 Sistema de Control y Trazabilidad Apícola - FUNDACOVI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![Livewire](https://img.shields.io/badge/Livewire-3.x-FB70A9?style=for-the-badge&logo=livewire&logoColor=white)
+![Alpine.js](https://img.shields.io/badge/Alpine.js-8BC0D0?style=for-the-badge&logo=alpine.js&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA_Ready-Offline_First-5A0FC8?style=for-the-badge)
 
-## About Laravel
+Aplicación Web Progresiva (PWA) desarrollada para el control de calidad, seguimiento de la producción y promoción de productos apícolas asociados a la **Fundación Colombia de Vida (FUNDACOVI)** en Norte de Santander.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Este proyecto fue desarrollado bajo una arquitectura **Offline-First**, permitiendo a los productores agrícolas registrar sus datos en zonas rurales sin conexión a internet, garantizando la sincronización posterior mediante Service Workers e IndexedDB.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Características Principales
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Arquitectura Híbrida Offline-First:** Captura de datos en campo sin internet mediante IndexedDB (Dexie.js) con sincronización encolada inteligente.
+- **Control de Acceso Basado en Roles (RBAC):** Vistas y permisos aislados para Administradores y Apicultores (Multi-tenencia de datos).
+- **Control de Calidad Ciego (Antifraude):** Evaluación matemática automática de lotes de miel basada en normativas del INVIMA.
+- **Analítica Avanzada (BI):** Dashboards dinámicos generados con Chart.js y exportación directa a PDF.
+- **Catálogo Web Público:** Landing Page promocional para los productos con integración de correo SMTP.
 
-## Learning Laravel
+## 🛠️ Stack Tecnológico
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Backend:** Laravel 13, Livewire 3, MySQL / PostgreSQL
+- **Frontend:** Tailwind CSS v4, Alpine.js, Blade
+- **Almacenamiento Local (PWA):** Dexie.js, Vite PWA Plugin
+- **Control de Calidad (Pruebas):** PHPUnit (Caja Blanca), OWASP ZAP (Seguridad).
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ⚙️ Requisitos de Instalación
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- PHP >= 8.3
+- Composer >= 2.7
+- Node.js >= 20.x y NPM
+- MySQL >= 8.0
 
-## Agentic Development
+## 💻 Guía de Despliegue Local
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/ArthurZambrano19131015/webfundacovi.git
+   cd webfundacovi
+2. **Instalar dependencias:**
+   composer install
+   npm install --legacy-peer-deps
+3. **Configuración de Variables de Entorno:**
+   Duplica el archivo .env.example, renómbralo a .env y configura tu conexión a la base de datos MySQL.
+   cp .env.example .env
+   php artisan key:generate
+4. **Base de Datos y Datos Semilla (Seeders):**
+   php artisan migrate:fresh --seed
+Nota: El seeder creará automáticamente los roles del sistema y la cuenta del Administrador.
+5. **Compilar PWA para pruebas (Crítico para modo Offline):**
+   npm run build
+6. **Servir la aplicación:**
+   Puedes usar Laravel Herd o el servidor integrado:
+   php artisan serve
+(Para probar el modo Offline en un teléfono celular real, se recomienda exponer el entorno local mediante túneles seguros como herd share o ngrok, dado que los Service Workers exigen contextos HTTPS).
 
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+👨‍💻 Autores
+Trabajo de grado - Ingeniería de Sistemas (Universidad de Santander UDES, Campus Cúcuta):
+Arthur Edilsson Zambrano Niño
+Víctor Alfonso Plazas Rodríguez

@@ -9,7 +9,7 @@ use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactoMail;
 
-#[Layout('layouts.guest')] 
+#[Layout('layouts.guest')]
 class LandingPage extends Component
 {
     public $nombre = '';
@@ -25,7 +25,7 @@ class LandingPage extends Component
         ]);
 
         try {
-            Mail::to('admin@fundacovi.org')->send(new ContactoMail([
+            Mail::to('proyectoappwebfundacovi@gmail.com')->send(new ContactoMail([
                 'nombre'  => $this->nombre,
                 'email'   => $this->email,
                 'mensaje' => $this->mensaje,

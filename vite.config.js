@@ -19,7 +19,7 @@ export default defineConfig({
             scope: '/',
             injectRegister: 'script',
             manifest: {
-                name: 'Pro-Productos Apícolas FUNDACOVI',
+                name: 'Productos Apícolas FUNDACOVI',
                 short_name: 'Apicultura App',
                 description: 'Control de calidad y producción apícola Offline-First',
                 theme_color: '#FBBF24', 

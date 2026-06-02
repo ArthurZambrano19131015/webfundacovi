@@ -8,7 +8,7 @@
 
     <title>{{ config('app.name', 'FUNDACOVI') }}</title>
 
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="{{ asset('build/manifest.json') }}">
     <meta name="theme-color" content="#FBBF24">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
